@@ -1,6 +1,5 @@
 import re
 #import psycopg
-import sys
 from argparse import ArgumentParser
 #from config import config
 
@@ -28,10 +27,10 @@ def read_csv(list_csv):
         #data.append((item))
         first_name, surname, email = str(item).split(",")
 
-        clean_items(first_name, surname, email)
+        first_name, surname, email = clean_items(first_name, surname, email)
         data.append((first_name, surname, email))
 
-    print(data)
+    #print(data)
     return data
 
 
@@ -54,20 +53,17 @@ def clean_items(first_name, surname, email):
 
     print('surname cleaned is: ', surname)
 
-    # validate email later  -   use validate email package
-
-    email = str(email).strip("\n")
+    first_name = str(first_name).strip()
+    surname = str(surname).strip()
+    email = str(email).strip()
+    
     print('email stripped: ', email)
     regex = re.compile('[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}')
     emails = regex.findall(email)
     print("valid emails: ", emails)
-    # print('firstname: ', first_name)
-    # print('surname: ', surname)
-    # print('email: ', email)
-    # email = data[0][index]
+   
+    return (first_name, surname, email)
 
-def create_postgres_table():
-    pass
 
 def create_command_line_args():
 
@@ -87,13 +83,13 @@ def create_command_line_args():
       will be taken)
     """
     
-    parser.add_argument('--create_table', dest='table', help=help_message)
+    parser.add_argument('--create_table', action='store_true', help=help_message)
 
     help_message = """
     --dry_run – this will be used with the --file directive in case we want to run the script but not
         insert into the DB. All other functions will be executed, but the database won't be altered
     """
-    parser.add_argument('--dry_run', dest="dry_run", help=help_message)
+    parser.add_argument('--dry_run', action='store_true', help=help_message)
 
     help_message = """
     -u – PostgreSQL username
@@ -112,29 +108,73 @@ def create_command_line_args():
 
     args = parser.parse_args()
     return args
-        # if "--file" in args:
-        #     print('found file arg')
 
 
-#print(data)
-#clean_items(data)
+def create_postgres_table(data, args):
+    dbname = "PostgreSQL" #assumed, no directive given for this in specs, same with port number
+    username = args.username
+    print("username ",  username)
+    passwd = args.password
+    print("password ",  passwd)
+    host = args.host
+    print("username ",  username)
 
-def main(argv):
-    args = create_command_line_args()
+    #make db connection
+    # conn = psycopg2.connect(database=dbname, user=username, password=passwd, host=host) #, port= ) no port given
+    #create table with data
+    # cursor = conn.cursor()
+    sql = "CREATE TABLE users(name varchar2(25) NOT NULL, surname varchar2(50) NOT NULL, email NOT NULL UNIQUE)"
+    
+    print(sql)
+    # cursor.execute(sql)
+    for item in data:
+        name = item[0]
+        surname = item[1]
+        email = item[2]
+        #sql =  "INSERT INTO users(name, surname, email) VALUES(" + item[0] + "," + item[1] + "," + item[2] + ""
+        sql = ("""INSERT INTO users(name, surname, email) VALUES(%s, %s, %s)""",(name, surname, email))
+        print(sql)
+    # conn.commit
+
+
+def process_command_line_args(args):
+    #if args.file in argv:
+    print('dry run ', args.dry_run)
+    
     print(args.file)
-    print(args.table)
-    print(args.table)
-    print(args.dry_run)
-    print(args.username)
-    print(args.password)
-    print(args.host)
+    if args.file is not None:
+        csv_file = args.file
+        list_csv = load_csv(csv_file)
+        data = read_csv(list_csv)
+
+    print(args.create_table)
+    print('print data ', data)
+    if len(data) > 0 and args.dry_run is False:
+        create_postgres_table(data, args)
+        #csv_file = args.table
+        #create postgres table
+    else:
+       print("data is ", data) 
+
+def main():
+    args = create_command_line_args()
+    process_command_line_args(args)
+
+    #print(argv)
+    #process_arguements
+            
+    
+    #print(args.file)
+    #print(args.table)
+    #print(args.dry_run)
+    #print(args.username)
+    #print(args.password)
+    #print(args.host)
       
-    csv_file = args.file
-    list_csv = load_csv(csv_file)
-    data = read_csv(list_csv)
+    
 
 # if __name__ != "__main__":
-main(sys.argv)
+main()
 
 
 
