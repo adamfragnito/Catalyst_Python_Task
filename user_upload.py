@@ -17,52 +17,67 @@ def load_csv(file):
 
 def read_csv(list_csv):
     headers = list_csv.pop(0)
-    print("headers: ", headers)
-    
-    # str_csv = str(list_csv[0:1])
-  #  print(str_csv)
+    # print("headers: ", headers)
     data = []
     for item in list_csv:
-        #print(item)
-        #data.append((item))
-        first_name, surname, email = str(item).split(",")
+        
+        first_name, surname, email, email_valid = clean_items((item))
+        if email_valid:
+            data.append((first_name, surname, email))
+        else:
+            print(f'Email {email} is invalid - no insert will be made for user {first_name} {surname}')
+    exit()
 
-        first_name, surname, email = clean_items(first_name, surname, email)
-        data.append((first_name, surname, email))
-
-    #print(data)
     return data
 
 
 
-def clean_items(first_name, surname, email):
-    #for index, item in enumerate(data):
+# def clean_items(first_name, surname, email):
+def clean_items(item):
+    #clean first name
+    first_name, surname, email = str(item).split(",")
+    
     first_name = first_name[0:1].upper() + first_name[1:].lower()
-
-    surname = surname[0:1].upper() + surname[1:].lower()     
-
+    
     regex = re.compile('[^a-zA-Z]+')
     first_name = regex.sub('', first_name)
+    first_name = str(first_name).strip()
     print('first name cleaned is: ', first_name)
 
+    #clean surname
+    surname = surname[0:1].upper() + surname[1:].lower()     
     #check for apostraphe in surname and do not convert following letter to lowercase
     if "'" not in surname: 
         surname = surname[0:1].upper() + surname[1:].lower()
     else:
         surname = surname[0:1].upper() + "'" + surname[2:3].upper() + surname[3:].lower()
 
-    print('surname cleaned is: ', surname)
-
-    first_name = str(first_name).strip()
     surname = str(surname).strip()
-    email = str(email).strip()
+
     
-    print('email stripped: ', email)
-    regex = re.compile('[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}')
-    emails = regex.findall(email)
-    print("valid emails: ", emails)
-   
-    return (first_name, surname, email)
+    regex = re.compile("[A-Za-z0-9._'%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}") #regex to determine if valid email
+    
+    #validate emails : note on email regex : some web servers allow apostraphes so I have allowed it here  e.g. mo'connor@cat.net.nz is valied
+    
+    email_match = regex.match(email) or None #use match as it will match first one found, otherwise findall processes every email for every loop ???????
+    #print(email_match.group(0))
+
+    
+    if (email_match is not None):
+        #clean email
+        email = email = email_match.group(0)
+        email = email.lower()
+        email = str(email).strip()
+        print('cleaned email: ', email)
+        print('email is valid: ', email)
+        email_valid = True
+    else:
+        email_valid = False
+        #invalid_emails.append(email)
+    
+    # print(invalid_emails)
+    #email = regex.findall(email)
+    return (first_name, surname, email, email_valid)
 
 
 def create_command_line_args():
