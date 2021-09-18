@@ -8,33 +8,40 @@ from argparse import ArgumentParser
 #from validate_email import validate_email
 
 def load_csv(file):
+    """
+    open file and read the contents into a list
+    params: csv file
+    """
+
     with open(file) as f:
         list_csv = f.readlines()
-        #print(line)
         
-        #list_csv.append(line)
-    #print(list_csv)
     return list_csv
 
-def read_csv(list_csv):
-    headers = list_csv.pop(0)
-    # print("headers: ", headers)
+def process_csv(list_csv):
+    """
+    extract data from csv file into workable format, call clean routine beforehand
+    params: csv list
+    """
+    headers = list_csv.pop(0) # extract headers i.e. name,surname,email
+    
     data = []
     for item in list_csv:
-        
         first_name, surname, email, email_valid = clean_items((item))
-        # print("data before: ", first_name, " ", surname, " ", email)
         if email_valid:
             data.append((first_name, surname, email)) #append data only if email is valid
         else:
-            print(f'Email {email} is invalid - no insert will be made for user {first_name} {surname}')
+            print(f'Email {email} is invalid - no insert will be made for user {first_name} {surname} \n')
 
     return data
 
 
-
-# def clean_items(first_name, surname, email):
 def clean_items(item):
+    """
+    cleans items into appropriate format
+    params: item - a row of data
+    """
+    
     #clean first name
     first_name, surname, email = str(item).split(",")
     
@@ -54,41 +61,38 @@ def clean_items(item):
 
     surname = str(surname).strip()
 
+    #define regular expression for valid email format
+    #note : some web servers allow apostraphes so I have allowed it here  e.g. mo'connor@cat.net.nz is valid
+    regex = re.compile("[A-Za-z0-9._'%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}")
     
-    regex = re.compile("[A-Za-z0-9._'%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}") #regex to determine if valid email
-    
-    #validate emails : note on email regex : some web servers allow apostraphes so I have allowed it here  e.g. mo'connor@cat.net.nz is valied
-    
-    email_match = regex.match(email) or None #use match as it will match first one found, otherwise findall processes every email for every loop ???????
-    #print(email_match.group(0))
-
+    #match on valid emails
+    email_match = regex.match(email) or None
     
     if (email_match is not None):
-        #clean email
+        #clean email if valid
         email = email = email_match.group(0)
         email = email.lower()
         email = str(email).strip()
         email_valid = True
     else:
+        #invalid email
         email_valid = False
-        #invalid_emails.append(email)
     
-    # print(invalid_emails)
-    #email = regex.findall(email)
     return (first_name, surname, email, email_valid)
 
 
 def create_command_line_args():
+    """
+    build the command line arguments using argparse module
+    params: none
+    """
 
     parser = ArgumentParser()
-    #parser.add_argument("--file", "pos_arg_1", help="--file [csv file name] – this is the name of the CSV to be parsed")
-    # parser.add_argument("-q", "--quiet",
-    #                     action="store_false", dest="verbose", default=True,
-    #                     help="don't print status messages to stdout")
+    
+    #define help text for each command line argument and add argument to parser
     help_message = """
     --file [csv file name] – this is the name of the CSV to be parsed\n
     """
-    #parser.add_argument('--help', dest='help')#, help=help_message)
     
     parser.add_argument('--file', dest='file', help=help_message)
     help_message = """
@@ -114,8 +118,9 @@ def create_command_line_args():
     """
     parser.add_argument('-p', dest="password", help=help_message)
 
+    # define host option as -host, not -h as this will conflict with the build in switches for help i.e. -h, --help
     help_message = """
-    -h – PostgreSQL host
+    -host – PostgreSQL host
     """
     parser.add_argument('-host', dest="host", help=help_message)
 
@@ -124,6 +129,13 @@ def create_command_line_args():
 
 
 def create_postgres_table(data, args):
+    """
+    create db table and insert data
+    param:  data - cleaned data ready for insert
+            args - command line arguments entered by user
+    """
+
+    #define db parameters
     dbname = "postgres" #assumed, no directive given for this in specs, same with port number
     username = args.username
     passwd = args.password
@@ -136,17 +148,21 @@ def create_postgres_table(data, args):
     #build query
     query_str = "CREATE TABLE IF NOT EXISTS users(name varchar(25) NOT NULL, surname varchar(50) NOT NULL, email varchar(50) UNIQUE NOT NULL)"
     query = sql.SQL(query_str)
+
+    #execute and commit query
     cursor.execute(query)
     conn.commit()
     
     for item in data:
+        #extract values from data
         name_val = item[0]
         surname_val = item[1]
         email_val = item[2]
         
+        #insert into db
         try:
             cursor.execute('INSERT INTO users (name, surname, email) VALUES (%s, %s, %s)', (name_val, surname_val, email_val))
-        #abort transaction if duplicate email is found
+        #rollback transaction if duplicate email is found and move on
         except psycopg2.errors.UniqueViolation:
             conn.rollback()
             continue
@@ -154,18 +170,27 @@ def create_postgres_table(data, args):
             print('Insert aborted: ', e)
             continue
         else:
-            #print('row ready for commit')
             conn.commit()
+            print('row written to database')
 
 
 def process_command_line_args(args):
+    """
+    processes the command line arguments and passes them to the various methods to read and write data
+    params: args - all possible arguments (built by the create_command_line_args method)
+    """
     
+    #check if file arg has been passed by user
     if args.file is not None:
         csv_file = args.file
+        #load and process data
         list_csv = load_csv(csv_file)
-        data = read_csv(list_csv)
+        data = process_csv(list_csv)
+    else:
+        data = None
     
-    if len(data) > 0 and args.dry_run is False:
+    # build db table only if there is data and not a dry-run
+    if data and args.dry_run is False:
         create_postgres_table(data, args)
       
 
