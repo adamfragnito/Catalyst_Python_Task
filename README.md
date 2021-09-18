@@ -1,7 +1,7 @@
 # Catalyst_Python_Task
 Python assignment for Catalyst IT
 
-IMPORTANT!!
+IMPORTANT
 
 -host conflict with -h and --help issue
 
