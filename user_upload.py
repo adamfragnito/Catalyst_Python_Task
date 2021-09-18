@@ -148,7 +148,9 @@ def create_postgres_table(data, args):
     #execute and commit query
     cursor.execute(query)
     conn.commit()
-    
+    counter = 0
+    print(f'rows written to database (excludes rows with invalid email, as above): ')
+
     for item in data:
         #extract values from data
         name_val = item[0]
@@ -157,6 +159,7 @@ def create_postgres_table(data, args):
         
         #insert into db
         try:
+            counter += 1
             cursor.execute('INSERT INTO users (name, surname, email) VALUES (%s, %s, %s)', (name_val, surname_val, email_val))
         #rollback transaction if duplicate email is found and move on
         except psycopg2.errors.UniqueViolation:
@@ -167,7 +170,7 @@ def create_postgres_table(data, args):
             continue
         else:
             conn.commit()
-            print('row written to database')
+            print(f'row {counter} written to database')
 
 
 def process_command_line_args(args):
