@@ -18,7 +18,7 @@ IMPORTANT!!
                       executed, but the database won't be altered
       -u USERNAME     -u – PostgreSQL username
       -p PASSWORD     -p – PostgreSQL password
-      -host HOST      -h – PostgreSQL host
+      -host HOST      -host – PostgreSQL host
 
 
 Program Assumptions
