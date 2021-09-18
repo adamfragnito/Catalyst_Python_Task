@@ -1,8 +1,9 @@
 import re
-#import psycopg
+import psycopg2
+
+from psycopg2 import sql
 from argparse import ArgumentParser
 #from config import config
-
 
 #from validate_email import validate_email
 
@@ -22,11 +23,11 @@ def read_csv(list_csv):
     for item in list_csv:
         
         first_name, surname, email, email_valid = clean_items((item))
+        # print("data before: ", first_name, " ", surname, " ", email)
         if email_valid:
-            data.append((first_name, surname, email))
+            data.append((first_name, surname, email)) #append data only if email is valid
         else:
             print(f'Email {email} is invalid - no insert will be made for user {first_name} {surname}')
-    exit()
 
     return data
 
@@ -42,8 +43,7 @@ def clean_items(item):
     regex = re.compile('[^a-zA-Z]+')
     first_name = regex.sub('', first_name)
     first_name = str(first_name).strip()
-    print('first name cleaned is: ', first_name)
-
+    
     #clean surname
     surname = surname[0:1].upper() + surname[1:].lower()     
     #check for apostraphe in surname and do not convert following letter to lowercase
@@ -68,8 +68,6 @@ def clean_items(item):
         email = email = email_match.group(0)
         email = email.lower()
         email = str(email).strip()
-        print('cleaned email: ', email)
-        print('email is valid: ', email)
         email_valid = True
     else:
         email_valid = False
@@ -126,70 +124,57 @@ def create_command_line_args():
 
 
 def create_postgres_table(data, args):
-    dbname = "PostgreSQL" #assumed, no directive given for this in specs, same with port number
+    dbname = "postgres" #assumed, no directive given for this in specs, same with port number
     username = args.username
-    print("username ",  username)
     passwd = args.password
-    print("password ",  passwd)
     host = args.host
-    print("username ",  username)
-
-    #make db connection
-    # conn = psycopg2.connect(database=dbname, user=username, password=passwd, host=host) #, port= ) no port given
-    #create table with data
-    # cursor = conn.cursor()
-    sql = "CREATE TABLE users(name varchar2(25) NOT NULL, surname varchar2(50) NOT NULL, email NOT NULL UNIQUE)"
     
-    print(sql)
-    # cursor.execute(sql)
+    #make db connection
+    conn = psycopg2.connect(database=dbname, user=username, password=passwd, host=host) #, port= ) no port given
+    #define cursor object
+    cursor = conn.cursor()
+    #build query
+    query_str = "CREATE TABLE IF NOT EXISTS users(name varchar(25) NOT NULL, surname varchar(50) NOT NULL, email varchar(50) UNIQUE NOT NULL)"
+    query = sql.SQL(query_str)
+    cursor.execute(query)
+    conn.commit()
+    
     for item in data:
-        name = item[0]
-        surname = item[1]
-        email = item[2]
-        #sql =  "INSERT INTO users(name, surname, email) VALUES(" + item[0] + "," + item[1] + "," + item[2] + ""
-        sql = ("""INSERT INTO users(name, surname, email) VALUES(%s, %s, %s)""",(name, surname, email))
-        print(sql)
-    # conn.commit
+        name_val = item[0]
+        surname_val = item[1]
+        email_val = item[2]
+        
+        try:
+            cursor.execute('INSERT INTO users (name, surname, email) VALUES (%s, %s, %s)', (name_val, surname_val, email_val))
+        #abort transaction if duplicate email is found
+        except psycopg2.errors.UniqueViolation:
+            conn.rollback()
+            continue
+        except psycopg2.errors.InFailedSqlTransaction as e:
+            print('Insert aborted: ', e)
+            continue
+        else:
+            #print('row ready for commit')
+            conn.commit()
 
 
 def process_command_line_args(args):
-    #if args.file in argv:
-    print('dry run ', args.dry_run)
     
-    print(args.file)
     if args.file is not None:
         csv_file = args.file
         list_csv = load_csv(csv_file)
         data = read_csv(list_csv)
-
-    print(args.create_table)
-    print('print data ', data)
+    
     if len(data) > 0 and args.dry_run is False:
         create_postgres_table(data, args)
-        #csv_file = args.table
-        #create postgres table
-    else:
-       print("data is ", data) 
+      
 
 def main():
     args = create_command_line_args()
     process_command_line_args(args)
 
-    #print(argv)
-    #process_arguements
-            
-    
-    #print(args.file)
-    #print(args.table)
-    #print(args.dry_run)
-    #print(args.username)
-    #print(args.password)
-    #print(args.host)
-      
-    
-
-# if __name__ != "__main__":
-main()
+if __name__ == "__main__":
+    main()
 
 
 
