@@ -1,11 +1,7 @@
 import re
 import psycopg2
-
 from psycopg2 import sql
 from argparse import ArgumentParser
-#from config import config
-
-#from validate_email import validate_email
 
 def load_csv(file):
     """
