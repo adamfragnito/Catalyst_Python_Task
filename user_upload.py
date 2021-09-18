@@ -148,6 +148,8 @@ def create_postgres_table(data, args):
     #execute and commit query
     cursor.execute(query)
     conn.commit()
+    
+    # message and counter for stdout
     counter = 0
     print(f'rows written to database (excludes rows with invalid email, as above): ')
 
