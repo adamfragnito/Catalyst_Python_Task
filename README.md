@@ -23,7 +23,8 @@ IMPORTANT!!
 
 Program Assumptions
 
-apostraphe in email is allowed as valid format - some mail servers allow this and some don't so I made the decision to allow
+apostraphe in email is allowed as valid format - some mail servers allow this and some don't so I made the decision to allow.
+
 'postrgres' is the assumed name of the database within the code, no port given
 
 Program Notes
