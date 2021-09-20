@@ -164,7 +164,8 @@ def create_postgres_table(data, args):
             counter += 1
             cursor.execute('INSERT INTO users (name, surname, email) VALUES (%s, %s, %s)', (name_val, surname_val, email_val))
         #rollback transaction if duplicate email is found and move on
-        except psycopg2.errors.UniqueViolation:
+        except psycopg2.errors.UniqueViolation as e:
+            print('Insert aborted: ', e)
             conn.rollback()
             continue
         except psycopg2.errors.InFailedSqlTransaction as e:
@@ -195,12 +196,8 @@ def process_command_line_args(args):
         create_postgres_table(data, args)
       
 
-def main():
+if __name__ == "__main__":
     args = create_command_line_args()
     process_command_line_args(args)
-
-if __name__ == "__main__":
-    main()
-
 
 
