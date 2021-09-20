@@ -1,7 +1,7 @@
 # Catalyst_Python_Task
 Python assignment for Catalyst IT
 
-IMPORTANT!!
+IMPORTANT
 
 -host conflict with -h and --help issue
 
@@ -18,12 +18,14 @@ IMPORTANT!!
                       executed, but the database won't be altered
       -u USERNAME     -u – PostgreSQL username
       -p PASSWORD     -p – PostgreSQL password
-      -host HOST      -h – PostgreSQL host
+      -host HOST      -host – PostgreSQL host
 
 
 Program Assumptions
 
-apostraphe in email is allowed as valid format - some mail servers allow this and some don't so I made the decision to allow
+apostraphe in email is allowed as valid format - some mail servers allow this and some don't so I made the decision to allow.
+
+'postgres' is the assumed name of the database within the code, no port given
 
 Program Notes
 
