@@ -195,9 +195,10 @@ def process_command_line_args(args):
     if data and args.dry_run is False:
         create_postgres_table(data, args)
       
-
-if __name__ == "__main__":
+def main():
     args = create_command_line_args()
     process_command_line_args(args)
 
+if __name__ == "__main__":
+    main()
 
